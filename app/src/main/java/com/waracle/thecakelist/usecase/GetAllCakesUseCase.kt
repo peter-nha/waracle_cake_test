@@ -13,6 +13,8 @@ import javax.inject.Inject
  *
  * TODO: In a more sophisticated codebase, the retrieval and parsing of entries may be split into
  * two use cases, but this should suffice for this example.
+ *
+ * TODO: we may want to make this an interface + implementation, for easier mocking etc
  */
 class GetAllCakesUseCase @Inject constructor(private val cakeListService: CakeListService) {
     operator fun invoke() = flow {
