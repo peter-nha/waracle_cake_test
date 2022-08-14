@@ -101,12 +101,21 @@ fun CakeListView(
             text = {
                 Text(error)
             },
-            confirmButton = {
+            dismissButton = {
                 Button(
                     onClick = {
                         cakeListViewModel.clearErrorMessage()
                     }) {
                     Text(stringResource(id = R.string.ok))
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        cakeListViewModel.clearErrorMessage()
+                        cakeListViewModel.refresh()
+                    }) {
+                    Text(stringResource(id = R.string.try_again))
                 }
             },
         )
