@@ -22,6 +22,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.flowWithLifecycle
 import coil.compose.AsyncImage
+import com.google.accompanist.swiperefresh.SwipeRefresh
+import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import com.waracle.thecakelist.R
 import com.waracle.thecakelist.model.Cake
 import com.waracle.thecakelist.viewmodel.CakeListViewModel
@@ -34,8 +36,8 @@ fun CakeListView(
     // composing with lifecycleOwner first, to make sure not collected when not started
     // TODO: there is a cool extension to trim this boilerplate here https://proandroiddev.com/how-to-collect-flows-lifecycle-aware-in-jetpack-compose-babd53582d0b
     val lifecycleOwner = LocalLifecycleOwner.current
-    val lifecycleAwareCakes = remember(cakeListViewModel.getAllCakes, lifecycleOwner) {
-        cakeListViewModel.getAllCakes.flowWithLifecycle(
+    val lifecycleAwareCakes = remember(cakeListViewModel.allCakes, lifecycleOwner) {
+        cakeListViewModel.allCakes.flowWithLifecycle(
             lifecycleOwner.lifecycle,
             Lifecycle.State.STARTED
         )
@@ -49,8 +51,17 @@ fun CakeListView(
             )
         }
 
+    val lifecycleAwareIsLoading =
+        remember(cakeListViewModel.isLoading, lifecycleOwner) {
+            cakeListViewModel.isLoading.flowWithLifecycle(
+                lifecycleOwner.lifecycle,
+                Lifecycle.State.STARTED
+            )
+        }
+
     val cakes: List<Cake> by lifecycleAwareCakes.collectAsState(initial = emptyList())
     val displayedCakeDetails: String? by lifecycleAwareCakeDetails.collectAsState(initial = null)
+    val isLoading: Boolean by lifecycleAwareIsLoading.collectAsState(initial = false)
 
     displayedCakeDetails?.let { details ->
         AlertDialog(
@@ -72,11 +83,18 @@ fun CakeListView(
         )
     }
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize()
+    SwipeRefresh(
+        state = rememberSwipeRefreshState(isLoading),
+        onRefresh = {
+            cakeListViewModel.refresh()
+        },
     ) {
-        items(cakes) { cake ->
-            CakeRow(cakeListViewModel, cake)
+        LazyColumn(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            items(cakes) { cake ->
+                CakeRow(cakeListViewModel, cake)
+            }
         }
     }
 }
