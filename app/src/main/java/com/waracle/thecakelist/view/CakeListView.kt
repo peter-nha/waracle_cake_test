@@ -8,10 +8,8 @@ import androidx.compose.material.AlertDialog
 import androidx.compose.material.Button
 import androidx.compose.material.Divider
 import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -71,6 +69,7 @@ fun CakeListView(
     val displayedCakeDetails: String? by lifecycleAwareCakeDetails.collectAsState(initial = null)
     val errorMessage: String? by lifecycleAwareErrorMessage.collectAsState(initial = null)
     val isLoading: Boolean by lifecycleAwareIsLoading.collectAsState(initial = false)
+    var doneInitialLoad by rememberSaveable { mutableStateOf(false) }
 
     displayedCakeDetails?.let { details ->
         AlertDialog(
@@ -134,6 +133,11 @@ fun CakeListView(
                 CakeRow(cakeListViewModel, cake)
             }
         }
+    }
+
+    if (!doneInitialLoad) {
+        doneInitialLoad = true
+        cakeListViewModel.refresh()
     }
 }
 

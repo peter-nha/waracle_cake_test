@@ -29,10 +29,6 @@ class CakeListViewModel @Inject constructor(
     private val _isLoading: MutableStateFlow<Boolean> by lazy { MutableStateFlow(false) }
     val isLoading: StateFlow<Boolean> = _isLoading
 
-    init {
-        refresh()
-    }
-
     // pass null to dismiss cake details
     fun showCakeDetails(cakeDetails: String?) {
         viewModelScope.launch {
