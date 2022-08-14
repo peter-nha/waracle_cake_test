@@ -2,14 +2,19 @@ package com.waracle.thecakelist
 
 import com.waracle.thecakelist.api.CakeDTO
 import com.waracle.thecakelist.api.CakeListService
+import com.waracle.thecakelist.api.ServiceResponse
 import com.waracle.thecakelist.model.Cake
 import com.waracle.thecakelist.usecase.GetAllCakesUseCase
 import junit.framework.Assert.assertEquals
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
+import okhttp3.ResponseBody.Companion.toResponseBody
 import okio.Timeout
+import org.hamcrest.CoreMatchers.instanceOf
+import org.hamcrest.MatcherAssert.assertThat
 import org.junit.Test
 import retrofit2.Call
 import retrofit2.Callback
@@ -40,8 +45,9 @@ class GetAllCakesUseCaseTest {
             ),
         )
 
-        val parsedList = GetAllCakesUseCase(TestCakeListService(listFromAPI)).invoke().first()
-        assertEquals(2, parsedList.count())
+        val parsedList = GetAllCakesUseCase(TestCakeListService(listFromAPI)).invoke()
+            .first() as ServiceResponse.Success
+        assertEquals(2, parsedList.data.count())
     }
 
     @Test
@@ -66,14 +72,15 @@ class GetAllCakesUseCaseTest {
             ),
         )
 
-        val parsedList = GetAllCakesUseCase(TestCakeListService(listFromAPI)).invoke().first()
+        val parsedList = GetAllCakesUseCase(TestCakeListService(listFromAPI)).invoke()
+            .first() as ServiceResponse.Success
         assertEquals(
             Cake(
                 title = "Title A",
                 image = "",
                 desc = "",
             ),
-            parsedList[0]
+            parsedList.data[0]
         )
         assertEquals(
             Cake(
@@ -81,7 +88,7 @@ class GetAllCakesUseCaseTest {
                 image = "",
                 desc = "",
             ),
-            parsedList[1]
+            parsedList.data[1]
         )
         assertEquals(
             Cake(
@@ -89,7 +96,24 @@ class GetAllCakesUseCaseTest {
                 image = "",
                 desc = "",
             ),
-            parsedList[2]
+            parsedList.data[2]
+        )
+    }
+
+    @Test
+    fun `confirm API error causes error condition in usecase response`() = runTest {
+
+        val listFromAPI = listOf(
+            CakeDTO(
+                title = "Title A",
+                image = "",
+                desc = "",
+            ),
+        )
+
+        assertThat(
+            GetAllCakesUseCase(TestCakeListService(listFromAPI, true)).invoke()
+                .first(), instanceOf(ServiceResponse.Failure::class.java)
         )
     }
 }
@@ -98,13 +122,19 @@ class GetAllCakesUseCaseTest {
 // * we could create a more general-purpose mock implementation of Call
 // * we could utilise a MockWebServer instead, especially if we are trying to create an instrumented test
 // * we could do something clever with Hilt
-class TestCakeResponseCall(private val requiredResponse: List<CakeDTO>) : Call<List<CakeDTO>> {
+class TestCakeResponseCall(
+    private val requiredResponse: List<CakeDTO>,
+    private val shouldError: Boolean
+) : Call<List<CakeDTO>> {
     override fun clone(): Call<List<CakeDTO>> {
         return this
     }
 
     override fun execute(): Response<List<CakeDTO>> {
-        return Response.success(requiredResponse)
+        return if (shouldError) Response.error(
+            500,
+            "test error".toResponseBody("text/plain".toMediaTypeOrNull())
+        ) else Response.success(requiredResponse)
     }
 
     override fun enqueue(callback: Callback<List<CakeDTO>>) {
@@ -131,8 +161,11 @@ class TestCakeResponseCall(private val requiredResponse: List<CakeDTO>) : Call<L
     }
 }
 
-class TestCakeListService(private val requiredResponse: List<CakeDTO>) : CakeListService {
+class TestCakeListService(
+    private val requiredResponse: List<CakeDTO>,
+    private val shouldError: Boolean = false
+) : CakeListService {
     override fun getCakeList(): Call<List<CakeDTO>> {
-        return TestCakeResponseCall(requiredResponse)
+        return TestCakeResponseCall(requiredResponse, shouldError)
     }
 }

@@ -51,6 +51,14 @@ fun CakeListView(
             )
         }
 
+    val lifecycleAwareErrorMessage =
+        remember(cakeListViewModel.errorMessage, lifecycleOwner) {
+            cakeListViewModel.errorMessage.flowWithLifecycle(
+                lifecycleOwner.lifecycle,
+                Lifecycle.State.STARTED
+            )
+        }
+
     val lifecycleAwareIsLoading =
         remember(cakeListViewModel.isLoading, lifecycleOwner) {
             cakeListViewModel.isLoading.flowWithLifecycle(
@@ -61,6 +69,7 @@ fun CakeListView(
 
     val cakes: List<Cake> by lifecycleAwareCakes.collectAsState(initial = emptyList())
     val displayedCakeDetails: String? by lifecycleAwareCakeDetails.collectAsState(initial = null)
+    val errorMessage: String? by lifecycleAwareErrorMessage.collectAsState(initial = null)
     val isLoading: Boolean by lifecycleAwareIsLoading.collectAsState(initial = false)
 
     displayedCakeDetails?.let { details ->
@@ -76,6 +85,26 @@ fun CakeListView(
                 Button(
                     onClick = {
                         cakeListViewModel.showCakeDetails(null)
+                    }) {
+                    Text(stringResource(id = R.string.ok))
+                }
+            },
+        )
+    }
+
+    errorMessage?.let { error ->
+        AlertDialog(
+            onDismissRequest = { cakeListViewModel.clearErrorMessage() },
+            title = {
+                Text(stringResource(id = R.string.error_message))
+            },
+            text = {
+                Text(error)
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        cakeListViewModel.clearErrorMessage()
                     }) {
                     Text(stringResource(id = R.string.ok))
                 }
