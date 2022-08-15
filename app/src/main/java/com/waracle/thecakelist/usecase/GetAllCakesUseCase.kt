@@ -4,6 +4,7 @@ import com.waracle.thecakelist.api.CakeListService
 import com.waracle.thecakelist.api.ServiceResponse
 import com.waracle.thecakelist.model.Cake
 import com.waracle.thecakelist.model.toCake
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import retrofit2.awaitResponse
 import javax.inject.Inject
@@ -35,5 +36,11 @@ class GetAllCakesUseCase @Inject constructor(private val cakeListService: CakeLi
                 )
             ) // TODO: not nice to dump server errors to user, preferably have some nicer messages
         }
+    }.catch { e ->
+        emit(
+            ServiceResponse.Failure(
+                e.message ?: "Unknown Error"
+            )
+        ) // TODO: not nice to dump server errors to user, preferably have some nicer messages
     }
 }
